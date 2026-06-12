@@ -16,7 +16,7 @@ export interface CoignConfig {
   toolChoice?: 'auto' | 'required' | { type: 'function'; name: string };
   autoApprove?: Array<'read' | 'write' | 'destructive'>;
   persistHistory?: boolean;
-  cacheBackend?: 'cache' | 'indexeddb' | 'opfs' | 'cross-origin';
+  cacheBackend?: 'cache' | 'indexeddb' | 'opfs' | 'cross-origin'; // default: 'indexeddb'
   toolTimeoutMs?: number;
   onLoad?: (p: { progress: number; text: string }) => void;
   onReady?: () => void;

@@ -2,7 +2,7 @@
 
 > A private, page-aware AI agent SDK that runs entirely in the visitor's browser.
 
-No API keys. No servers. No per-message cost. The model downloads once (≈ 400 MB–4.5 GB depending on preset) and then answers questions, reads your page, searches content, and even executes custom tools — all on the user's device.
+No API keys. No servers. No per-message cost. The model downloads once (≈ 400 MB–4.5 GB depending on preset), caches locally in IndexedDB, and then answers questions, reads your page, searches content, and even executes custom tools — all on the user's device via WebGPU.  All inference is 100 % offline after the first download.
 
 ## Quick start
 
@@ -61,7 +61,23 @@ const answer = await ask('What is this page about?');
 | `coign-quality` | ~4.5 GB | manual (XML) | Long-form reasoning |
 | `coign-tools` | ~4.5 GB | native (Hermes) | When tool-call reliability matters most |
 
-Use `modelUrl` to load from a custom URL or your own CDN.
+Use `modelUrl` to load from a custom URL or your own CDN.  Use `cacheBackend` to control where weights are stored:
+
+| Backend | Persistence | Use case |
+|---------|-------------|----------|
+| `indexeddb` (default) | Survives browser restarts | Standard offline usage |
+| `opfs` | Survives browser restarts, faster on Chromium | Best performance / privacy |
+| `cache` | May be evicted by browser | Development / low disk space |
+| `cross-origin` | Service-worker based | Advanced / self-hosted mirrors |
+
+## Offline mode
+
+Coign uses **WebLLM** (`@mlc-ai/web-llm`) exclusively.  There is **no** fallback to:
+- Chrome AI / Prompt API / `chrome.ai`
+- Gemini Nano or any built-in browser LLM
+- OpenAI, Claude, or any cloud API
+
+On first visit the chosen model downloads from HuggingFace/MLC (or your `modelUrl`) and is cached locally.  Every subsequent visit loads from cache and runs inference entirely in-browser via WebGPU — no network calls during chat.
 
 ## Built-in tools
 

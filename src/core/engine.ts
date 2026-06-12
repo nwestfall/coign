@@ -21,7 +21,11 @@ export async function initEngine(config: CoignConfig): Promise<void> {
   isLoading = true;
 
   try {
+    // Build AppConfig from either a custom model URL or the built-in prebuilt registry
+    const appConfig = buildAppConfig(config);
+
     engine = await webllm.CreateMLCEngine(config.model, {
+      appConfig,
       initProgressCallback: (report) => {
         emit('load', { progress: report.progress, text: report.text });
       },
@@ -68,6 +72,48 @@ export function destroyEngine(): void {
   engine?.unload();
   engine = null;
   loadedModelId = null;
+}
+
+/**
+ * Build an explicit WebLLM AppConfig so the engine uses ONLY the
+ * local WebLLM runtime — no Chrome AI APIs, no online inference
+ * services, no fallback to cloud LLMs.
+ *
+ * WebLLM downloads model weights once (from HuggingFace/MLC or a
+ * custom `modelUrl`) and caches them locally.  All subsequent
+ * inference runs 100 % in-browser via WebGPU.
+ *
+ * Three paths:
+ * 1. `config.modelUrl` is provided → single-entry custom model list
+ *    (self-hosted / fully-offline mirror).
+ * 2. `config.cacheBackend` is provided → override the default.
+ * 3. Default → use `prebuiltAppConfig` with `indexeddb` cache for
+ *    strong offline persistence across browser sessions.
+ */
+function buildAppConfig(config: CoignConfig): webllm.AppConfig {
+  const cacheBackend = config.cacheBackend ?? 'indexeddb';
+
+  if (config.modelUrl) {
+    const base = config.modelUrl.replace(/\/$/, '');
+    const modelRecord: webllm.ModelRecord = {
+      model: base,                 // URL to model-weight repo / folder
+      model_id: config.model,
+      model_lib: base + '/' + config.model + '-webgpu.wasm',
+      vram_required_MB: 0,
+      low_resource_required: true,
+    };
+    const appConfig: webllm.AppConfig = {
+      model_list: [modelRecord],
+      cacheBackend,
+    };
+    return appConfig;
+  }
+
+  const appConfig: webllm.AppConfig = {
+    ...webllm.prebuiltAppConfig,
+    cacheBackend,
+  };
+  return appConfig;
 }
 
 function makeError(kind: CoignError['kind'], message: string): CoignError {

@@ -1,5 +1,9 @@
 /**
  * Model presets and capability table.
+ * 
+ * All presets use WebLLM (@mlc-ai/web-llm) and run 100% locally in the browser.
+ * Weights are downloaded once from the MLC/HuggingFace CDN (or your own mirror via
+ * `modelUrl`) and cached offline — no cloud API calls during inference.
  */
 
 export interface Preset {

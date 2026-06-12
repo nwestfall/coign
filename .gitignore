@@ -21,3 +21,6 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# Playwright MCP artifacts
+.playwright-mcp/
