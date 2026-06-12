@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coign IIFE Queue Test Fixture</title>
+</head>
+<body>
+  <div id="log"></div>
+
+  <script>
+    window.Coign = window.Coign || function() {
+      (window.Coign.q = window.Coign.q || []).push(arguments);
+    };
+
+    Coign('config', { theme: { accent: '#6366f1' } });
+
+    Coign(function(coign) {
+      window.callbackVersion = coign.version;
+    });
+  </script>
+
+  <script src="../../dist/coign-sdk.iife.js"></script>
+</body>
+</html>

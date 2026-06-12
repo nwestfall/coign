@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coign Widget Test Fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; }
+    #inline-host { border: 2px dashed #ccc; min-height: 200px; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Widget Test Fixture</h1>
+  <div id="inline-host"></div>
+
+  <script type="module">
+    import {
+      createWidget,
+      destroyWidget,
+      showWidget,
+      hideWidget,
+      openPanel,
+      closePanel,
+      mountInline,
+      unmountInline,
+      addAssistantMessage,
+      addUserMessage,
+      applyTheme,
+    } from '../../src/ui/widget.js';
+
+    window.widgetAPI = {
+      createWidget: (config) => createWidget(config, (q) => {
+        window.lastQuestion = q;
+      }),
+      destroyWidget,
+      showWidget,
+      hideWidget,
+      openPanel,
+      closePanel,
+      mountInline,
+      unmountInline,
+      addAssistantMessage,
+      addUserMessage,
+      applyTheme,
+    };
+  </script>
+</body>
+</html>

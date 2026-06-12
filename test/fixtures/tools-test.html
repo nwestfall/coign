@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coign Tools Test Fixture</title>
+  <meta property="og:title" content="Tools Test Page" />
+  <meta property="og:description" content="A fixture for testing Coign built-in tools." />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Tools Test"
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Tools Test Fixture</h1>
+  </header>
+
+  <main role="main">
+    <section id="intro">
+      <h2>Introduction</h2>
+      <p>This page is used for testing Coign SDK built-in tools.</p>
+    </section>
+
+    <section id="pricing">
+      <h2>Pricing</h2>
+      <ul>
+        <li><strong>Starter:</strong> $9/mo</li>
+        <li><strong>Pro:</strong> $29/mo</li>
+      </ul>
+    </section>
+
+    <section id="features">
+      <h2>Features</h2>
+      <p>Full-text search, page outline, and element inspection.</p>
+    </section>
+
+    <form id="contact-form" action="/submit">
+      <label>Name <input type="text" name="name" required /></label>
+      <label>Email <input type="email" name="email" /></label>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { searchPageTool } from '../../src/tools/built-in/search-page.js';
+    import { getPageOutlineTool } from '../../src/tools/built-in/get-outline.js';
+    import { getElementTool } from '../../src/tools/built-in/get-element.js';
+    import { showConfirmDialog } from '../../src/ui/modal.js';
+
+    window.toolAPI = {
+      searchPage: (args) => searchPageTool.execute(args),
+      getPageOutline: (args) => getPageOutlineTool.execute(args),
+      getElement: (args) => getElementTool.execute(args),
+      showConfirmDialog,
+    };
+  </script>
+</body>
+</html>

@@ -24,3 +24,4 @@ coverage/
 
 # Playwright MCP artifacts
 .playwright-mcp/
+test-results/
