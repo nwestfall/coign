@@ -18,6 +18,8 @@ export interface CoignConfig {
   persistHistory?: boolean;
   cacheBackend?: 'cache' | 'indexeddb' | 'opfs' | 'cross-origin'; // default: 'indexeddb'
   toolTimeoutMs?: number;
+  maxRetries?: number;
+  retryDelayMs?: number;
   onLoad?: (p: { progress: number; text: string }) => void;
   onReady?: () => void;
   onError?: (e: CoignError) => void;
@@ -26,6 +28,17 @@ export interface CoignConfig {
   onWarn?: (w: { message: string; kind: 'injection' | 'overflow' | 'fallback' | 'no_such_tool' }) => void;
   onToolCall?: (t: { name: string; args: any }) => void;
   onToolResult?: (t: { name: string; result: any; durationMs: number }) => void;
+  onDownloadProgress?: (p: DownloadProgress) => void;
+  onDownloadComplete?: () => void;
+  onDownloadError?: (e: CoignError) => void;
+}
+
+export interface DownloadProgress {
+  stage: 'checking-cache' | 'downloading' | 'compiling' | 'ready';
+  progress: number; // 0–1
+  text: string;
+  loadedBytes?: number;
+  totalBytes?: number;
 }
 
 export interface CoignTheme {
@@ -53,7 +66,11 @@ export type CoignEvent =
   | 'warn'
   | 'toolCall'
   | 'toolResult'
-  | 'unregister';
+  | 'unregister'
+  | 'downloadStart'
+  | 'downloadProgress'
+  | 'downloadComplete'
+  | 'downloadError';
 
 export type CoignEventPayload = {
   load: { progress: number; text: string };
@@ -65,6 +82,10 @@ export type CoignEventPayload = {
   toolCall: { name: string; args: any };
   toolResult: { name: string; result: any; durationMs: number };
   unregister: { name: string };
+  downloadStart: Record<string, never>;
+  downloadProgress: DownloadProgress;
+  downloadComplete: Record<string, never>;
+  downloadError: CoignError;
 };
 
 export interface CoignSDK {
@@ -83,6 +104,10 @@ export interface CoignSDK {
   clearHistory(): void;
   exportHistory(): ConversationEntry[];
   version: string;
+  isInitialized(): boolean;
+  isReady(): boolean;
+  retryInit(configOverride?: Partial<CoignConfig>): Promise<CoignSDK>;
+  swapModel(model: string): Promise<void>;
 }
 
 export interface CoignError extends Error {
@@ -165,4 +190,16 @@ export interface GetElementResult {
   attributes: Record<string, string>;
   boundingRect?: { x: number; y: number; w: number; h: number };
   inViewport: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Capability / environment types                                    */
+/* ------------------------------------------------------------------ */
+
+export interface SupportCheck {
+  supported: boolean;
+  reason?: string;
+  webgpu: boolean;
+  browser: string;
+  estimatedVramMb?: number;
 }

@@ -33,8 +33,9 @@
         <li><a href="#quick-start">Quick Start</a></li>
         <li><a href="#installation">Installation</a></li>
         <li><a href="#configuration">Configuration</a></li>
-        <li><a href="#api-reference">API Reference</a></li>
-        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#browser-check">Browser Check</a></li>
+        <li><a href="#download-progress">Download Progress</a></li>
+        <li><a href="#lifecycle">Lifecycle</a></li>
         <li><a href="#model-presets">Model Presets</a></li>
         <li><a href="#custom-tools">Custom Tools</a></li>
         <li><a href="#theming">Theming</a></li>
@@ -81,7 +82,11 @@ config({ theme: { accent: '#6366f1' } });</code></pre>
           <tr><td><code>contextWindowSize</code></td><td>number</td><td>Max tokens in context</td></tr>
           <tr><td><code>temperature</code></td><td>number</td><td>Sampling temperature (0–1)</td></tr>
           <tr><td><code>maxTokens</code></td><td>number</td><td>Max response tokens</td></tr>
-          <tr><td><code>customTools</code></td><td>array</td><td>Additional tool definitions</td></tr>
+          <tr><td><code>onDownloadProgress</code></td><td>function</td><td>Callback on model download progress</td></tr>
+          <tr><td><code>onDownloadComplete</code></td><td>function</td><td>Callback when model download finishes</td></tr>
+          <tr><td><code>onDownloadError</code></td><td>function</td><td>Callback when model download fails</td></tr>
+          <tr><td><code>maxRetries</code></td><td>number</td><td>Max retry attempts for init (default 0)</td></tr>
+          <tr><td><code>retryDelayMs</code></td><td>number</td><td>Delay between retry attempts in ms (default 1000)</td></tr>
         </tbody>
       </table>
 
@@ -113,6 +118,43 @@ Coign.destroyWidget(); // remove from DOM</code></pre>
   'destructive',
   'DELETE'
 );</code></pre>
+
+      <h2 id="browser-check">Browser Check</h2>
+      <p>Use <code>checkSupport()</code> to verify WebGPU and estimate available VRAM before calling <code>init()</code>:</p>
+      <pre><code>const check = await Coign.checkSupport();
+if (!check.supported) {
+  alert('Coign requires WebGPU. Reason: ' + check.reason);
+}</code></pre>
+      <p>Returns an object with:</p>
+      <ul>
+        <li><code>supported</code> — boolean, true if browser can run Coign</li>
+        <li><code>reason</code> — human-readable explanation when unsupported</li>
+        <li><code>webgpu</code> — boolean, true if navigator.gpu exists</li>
+        <li><code>browser</code> — detected browser name</li>
+        <li><code>estimatedVramMb</code> — rough VRAM estimate from GPU adapter</li>
+      </ul>
+
+      <h2 id="download-progress">Download Progress</h2>
+      <p>Model downloads are large (400 MB–4.5 GB). You can track progress with callbacks or events:</p>
+      <pre><code>init({
+  preset: 'coign-balanced',
+  onDownloadProgress: (p) =&gt; {
+    console.log(p.stage, p.progress); // 'downloading', 0.42
+  },
+  onDownloadComplete: () =&gt; console.log('Done!'),
+  onDownloadError: (err) =&gt; console.error(err.message),
+});</code></pre>
+      <p>The built-in widget also shows a progress overlay automatically. You can cancel a slow download:</p>
+      <pre><code>Coign.cancelEngineInit(); // or click Cancel in the widget overlay</code></pre>
+
+      <h2 id="lifecycle">Lifecycle</h2>
+      <p>Check SDK state at any time:</p>
+      <pre><code>Coign.isInitialized(); // true after init() resolves
+Coign.isReady();       // true when model is loaded and engine is ready</code></pre>
+      <p>Retry a failed init with exponential backoff:</p>
+      <pre><code>Coign.retryInit({ preset: 'coign-balanced', maxRetries: 3, retryDelayMs: 2000 });</code></pre>
+      <p>Swap models without destroying history or tools:</p>
+      <pre><code>await Coign.swapModel('coign-code');</code></pre>
 
       <h2 id="architecture">Architecture</h2>
       <p>Coign is designed as a set of layered modules:</p>

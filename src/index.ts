@@ -2,8 +2,9 @@
  * Coign SDK — public API entry point.
  */
 
-import type { CoignConfig, CoignSDK, ToolDefinition, CoignEvent } from './types.js';
-import { initEngine, destroyEngine } from './core/engine.js';
+import type { CoignConfig, CoignSDK, ToolDefinition, CoignEvent, CoignError } from './types.js';
+import { initEngine, destroyEngine, getIsLoading } from './core/engine.js';
+import { checkSupport } from './core/capabilities.js';
 import { resolvePreset } from './core/presets.js';
 import { buildPageOutline, outlineToMarkdown } from './core/context.js';
 import { registerBuiltin, registerHost, setHostNamespace } from './tools/registry.js';
@@ -28,6 +29,7 @@ import {
   addToolCallMessage,
   addToolResultMessage,
   applyTheme,
+  setThinking,
 } from './ui/widget.js';
 import { createRealAPI, replayQueue, resetQueueState, type GlobalAPI } from './queue-loader.js';
 
@@ -45,28 +47,33 @@ function createSDK(_config: CoignConfig): CoignSDK {
 
   return {
     async ask(question: string): Promise<string> {
-      emit('ask', { question });
-      const start = performance.now();
-      const currentConfig = getConfig();
-      const outline = outlineStore.get('current') ?? buildPageOutline(currentConfig.selectDOM ?? 'main, [role="main"], article');
+      setThinking(true);
+      try {
+        emit('ask', { question });
+        const start = performance.now();
+        const currentConfig = getConfig();
+        const outline = outlineStore.get('current') ?? buildPageOutline(currentConfig.selectDOM ?? 'main, [role="main"], article');
 
-      const messages: import('@mlc-ai/web-llm').ChatCompletionMessageParam[] = [
-        { role: 'system', content: buildSystemPrompt((currentConfig.prompt ?? '') + '\n\n' + outlineToMarkdown(outline)) },
-        ...history.map((h) => ({ role: h.role as any, content: h.content })),
-        { role: 'user', content: question },
-      ];
+        const messages: import('@mlc-ai/web-llm').ChatCompletionMessageParam[] = [
+          { role: 'system', content: buildSystemPrompt((currentConfig.prompt ?? '') + '\n\n' + outlineToMarkdown(outline)) },
+          ...history.map((h) => ({ role: h.role as any, content: h.content })),
+          { role: 'user', content: question },
+        ];
 
-      const { answer, toolCalls } = await runManualToolLoop(messages);
-      const durationMs = Math.round(performance.now() - start);
+        const { answer, toolCalls } = await runManualToolLoop(messages);
+        const durationMs = Math.round(performance.now() - start);
 
-      history.push({ role: 'user', content: question, timestamp: Date.now() });
-      history.push({ role: 'assistant', content: answer, toolCalls, timestamp: Date.now() });
-      if (currentConfig.persistHistory !== false) {
-        saveHistory(history);
+        history.push({ role: 'user', content: question, timestamp: Date.now() });
+        history.push({ role: 'assistant', content: answer, toolCalls, timestamp: Date.now() });
+        if (currentConfig.persistHistory !== false) {
+          saveHistory(history);
+        }
+
+        emit('answer', { answer, toolCalls, durationMs });
+        return answer;
+      } finally {
+        setThinking(false);
       }
-
-      emit('answer', { answer, toolCalls, durationMs });
-      return answer;
     },
 
     update(patch) {
@@ -83,48 +90,42 @@ function createSDK(_config: CoignConfig): CoignSDK {
       initialized = false;
     },
 
-    show() {
-      showWidget();
+    show() { showWidget(); },
+    hide() { hideWidget(); },
+    open() { openPanel(); },
+    close() { closePanel(); },
+
+    mount(selector) { mountInline(selector); },
+    unmount() { unmountInline(); },
+
+    tool(def) { return registerHost(def); },
+
+    on(event, cb) { return on(event as CoignEvent, cb); },
+
+    config(patch) { patchConfig(patch); },
+
+    clearHistory() { clearHistory(); },
+
+    exportHistory() { return exportHistory(); },
+
+    isInitialized() { return initialized; },
+    isReady() { return initialized && !getIsLoading(); },
+
+    async retryInit(configOverride?: Partial<CoignConfig>): Promise<CoignSDK> {
+      if (initialized) return sdkInstance!;
+      const cfg = { ...getConfig(), ...configOverride } as CoignConfig;
+      return init(cfg);
     },
 
-    hide() {
-      hideWidget();
-    },
-
-    open() {
-      openPanel();
-    },
-
-    close() {
-      closePanel();
-    },
-
-    mount(selector) {
-      mountInline(selector);
-    },
-
-    unmount() {
-      unmountInline();
-    },
-
-    tool(def) {
-      return registerHost(def);
-    },
-
-    on(event, cb) {
-      return on(event as CoignEvent, cb);
-    },
-
-    config(patch) {
-      patchConfig(patch);
-    },
-
-    clearHistory() {
-      clearHistory();
-    },
-
-    exportHistory() {
-      return exportHistory();
+    async swapModel(model: string): Promise<void> {
+      if (!initialized || !sdkInstance) {
+        throw new Error('Coign not initialized. Call Coign.init() first.');
+      }
+      const resolvedModel = resolvePreset(model);
+      const cfg = getConfig();
+      // Re-init engine with new model; widget and state preserved
+      await initEngine({ ...cfg, model: resolvedModel } as CoignConfig);
+      patchConfig({ model: resolvedModel });
     },
 
     version: VERSION,
@@ -136,9 +137,49 @@ export async function init(config: CoignConfig): Promise<CoignSDK> {
     return sdkInstance;
   }
 
-  const resolvedModel = resolvePreset(config.model);
+  // Browser support check
+  const support = await checkSupport();
+  if (!support.supported) {
+    const err = Object.assign(new Error(support.reason ?? 'WebGPU unsupported'), {
+      kind: 'browser_unsupported' as const,
+      cause: new Error(support.reason ?? 'WebGPU unsupported'),
+    }) as CoignError;
+    if (config.onError) config.onError(err);
+    emit('error', err);
+    throw err;
+  }
 
-  await initEngine({ ...config, model: resolvedModel });
+  try {
+    const resolvedModel = resolvePreset(config.model);
+
+    // Wire download lifecycle callbacks to events
+    if (config.onDownloadProgress) {
+      eventUnsubs.push(
+        on('downloadProgress', config.onDownloadProgress)
+      );
+    }
+    if (config.onDownloadComplete) {
+      eventUnsubs.push(
+        on('downloadComplete', config.onDownloadComplete)
+      );
+    }
+    if (config.onDownloadError) {
+      eventUnsubs.push(
+        on('downloadError', config.onDownloadError)
+      );
+    }
+
+    await initEngine({ ...config, model: resolvedModel });
+  } catch (e: any) {
+    const err = Object.assign(new Error(e?.message ?? 'Coign engine failed to initialise.'), {
+      kind: 'init' as const,
+      cause: e,
+    }) as CoignError;
+    if (config.onError) config.onError(err);
+    emit('error', err);
+    throw err;
+  }
+
   setHostNamespace(location.origin);
 
   // Register built-in tools
@@ -150,11 +191,11 @@ export async function init(config: CoignConfig): Promise<CoignSDK> {
   const outline = buildPageOutline(config.selectDOM ?? 'main, [role="main"], article');
   outlineStore.set('current', outline);
 
-  sdkInstance = createSDK({ ...config, model: resolvedModel });
+  sdkInstance = createSDK({ ...config, model: resolvePreset(config.model) });
   initialized = true;
 
   // Create widget UI
-  createWidget({ ...config, model: resolvedModel }, (question) => {
+  createWidget({ ...config, model: resolvePreset(config.model) }, (question) => {
     sdkInstance!.ask(question);
   });
 
@@ -198,9 +239,31 @@ export function tool(def: ToolDefinition): () => void {
 
 export async function ask(question: string): Promise<string> {
   if (!sdkInstance) {
+    console.warn('[Coign] ask() called before init(). Queueing question until SDK is ready.');
     throw new Error('Coign not initialized. Call Coign.init() first.');
   }
   return sdkInstance.ask(question);
+}
+
+export function isInitialized(): boolean {
+  return initialized;
+}
+
+export function isReady(): boolean {
+  return initialized && !getIsLoading();
+}
+
+export async function retryInit(configOverride?: Partial<CoignConfig>): Promise<CoignSDK> {
+  if (initialized && sdkInstance) return sdkInstance;
+  const cfg = { ...getConfig(), ...configOverride } as CoignConfig;
+  return init(cfg);
+}
+
+export async function swapModel(model: string): Promise<void> {
+  if (!initialized || !sdkInstance) {
+    throw new Error('Coign not initialized. Call Coign.init() first.');
+  }
+  return sdkInstance.swapModel(model);
 }
 
 export function destroy(): void {
@@ -267,11 +330,18 @@ api = {
   on,
   clearHistory,
   exportHistory,
+  isInitialized,
+  isReady,
+  retryInit,
+  swapModel,
   version: VERSION,
 };
 
 const realAPI = createRealAPI(api);
 Object.assign(realAPI, api);
+
+// Expose checkSupport on the real API function directly so Coign.checkSupport() works
+(realAPI as any).checkSupport = checkSupport;
 
 // Auto-replay queue when loaded in a browser
 if (typeof window !== 'undefined') {

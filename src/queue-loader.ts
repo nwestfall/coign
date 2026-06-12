@@ -8,6 +8,9 @@
  * Phase 2 deliverable.
  */
 
+import { checkSupport } from './core/capabilities.js';
+import { getIsLoading } from './core/engine.js';
+
 export interface QueuedCall {
   method: string;
   args: any[];
@@ -23,11 +26,28 @@ export interface GlobalAPI extends Record<string, any> {
  * Any call made to this function is pushed into `window.Coign.q`.
  */
 export function createStub(): (...args: any[]) => void {
-  return function stub(this: any) {
+  const stubFn = function stub(this: any) {
     const w = window as any;
     w.Coign.q = w.Coign.q || [];
     w.Coign.q.push(arguments);
-  };
+    const cmd = arguments[0];
+    if (cmd === 'ask') {
+      console.warn('[Coign] ask() was called before the SDK finished loading. The question will be queued and sent once init completes.');
+    }
+  } as any;
+
+  // Expose capability check on stub so host apps can probe early
+  stubFn.checkSupport = () => ({
+    supported: false,
+    reason: 'SDK not loaded yet. Add the Coign script tag and call Coign.init() once it loads.',
+    webgpu: false,
+    browser: 'unknown',
+    estimatedVramMb: undefined,
+  });
+
+  stubFn.isLoading = () => true;
+
+  return stubFn;
 }
 
 /**
@@ -36,7 +56,7 @@ export function createStub(): (...args: any[]) => void {
  * registration (`Coign(fn)`).
  */
 export function createRealAPI(api: GlobalAPI): (...args: any[]) => any {
-  return function realAPI(
+  const realFn = function realAPI(
     command: string | ((api: GlobalAPI) => void),
     ...args: any[]
   ) {
@@ -59,7 +79,12 @@ export function createRealAPI(api: GlobalAPI): (...args: any[]) => any {
     }
 
     console.warn(`[Coign] Unknown command: ${command}`);
-  };
+  } as any;
+
+  realFn.checkSupport = checkSupport;
+  realFn.isLoading = () => getIsLoading();
+
+  return realFn;
 }
 
 /**

@@ -6,6 +6,8 @@
 
 import type { CoignConfig, CoignTheme } from '../types.js';
 import styles from './styles.css?inline';
+import { attachLoadingOverlay, detachLoadingOverlay } from './loading-overlay.js';
+import { on } from '../events.js';
 
 /* ------------------------------------------------------------------ */
 /*  Module state                                                      */
@@ -26,6 +28,8 @@ let focusTrapCleanup: (() => void) | null = null;
 let lastFocusedElement: Element | null = null;
 let resizeHandler: (() => void) | null = null;
 let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+let isThinking = false;
+let thinkingMsgEl: HTMLElement | null = null;
 
 /* ------------------------------------------------------------------ */
 /*  DOM helpers                                                       */
@@ -82,9 +86,15 @@ export function createWidget(config: CoignConfig, onSubmit?: (question: string) 
 
   // Header
   const header = createEl('div', 'coign-panel-header');
+
+  const titleWrap = createEl('div', 'coign-panel-title-wrap');
+  const statusDot = createEl('span', 'coign-status-dot', { 'aria-hidden': 'true' });
+  statusDot.dataset.status = 'loading';
+  titleWrap.appendChild(statusDot);
   const title = createEl('h2', 'coign-panel-title', { id: 'coign-panel-title' });
   title.textContent = 'Coign';
-  header.appendChild(title);
+  titleWrap.appendChild(title);
+  header.appendChild(titleWrap);
 
   const closeBtn = createEl('button', 'coign-close', { 'aria-label': 'Close chat' });
   closeBtn.textContent = '\u00d7';
@@ -127,15 +137,25 @@ export function createWidget(config: CoignConfig, onSubmit?: (question: string) 
 
   formEl.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (isThinking) return;
     const value = inputEl!.value.trim();
     if (!value) return;
     inputEl!.value = '';
     addUserMessage(value);
+    setThinking(true);
     if (onSubmitCallback) onSubmitCallback(value);
   });
 
   panelEl.appendChild(formEl);
   root.appendChild(panelEl);
+
+  // Attach loading overlay inside the panel
+  attachLoadingOverlay(panelEl);
+
+  // Status dot follows engine state
+  on('downloadStart', () => setStatus('loading'));
+  on('ready', () => setStatus('ready'));
+  on('error', () => setStatus('error'));
 
   document.body.appendChild(hostElement);
 
@@ -157,6 +177,48 @@ export function createWidget(config: CoignConfig, onSubmit?: (question: string) 
 }
 
 /* ------------------------------------------------------------------ */
+/*  Thinking / status helpers                                         */
+/* ------------------------------------------------------------------ */
+
+export function setThinking(thinking: boolean): void {
+  isThinking = thinking;
+
+  if (inputEl) {
+    inputEl.disabled = thinking;
+    inputEl.placeholder = thinking ? 'Thinking\u2026' : 'Ask a question\u2026';
+  }
+
+  const sendBtn = formEl?.querySelector('.coign-send') as HTMLButtonElement | null;
+  if (sendBtn) sendBtn.disabled = thinking;
+
+  if (thinking) {
+    if (!thinkingMsgEl) {
+      thinkingMsgEl = createEl('div', 'coign-message coign-message--assistant coign-message--thinking');
+      const avatar = createEl('div', 'coign-message-avatar');
+      avatar.textContent = 'A';
+      thinkingMsgEl.appendChild(avatar);
+      const contentWrap = createEl('div', 'coign-message-content');
+      const textEl = createEl('div', 'coign-message-text');
+      textEl.textContent = 'Thinking\u2026';
+      contentWrap.appendChild(textEl);
+      thinkingMsgEl.appendChild(contentWrap);
+      messagesEl?.appendChild(thinkingMsgEl);
+      messagesEl && (messagesEl.scrollTop = messagesEl.scrollHeight);
+    }
+  } else {
+    if (thinkingMsgEl) {
+      thinkingMsgEl.remove();
+      thinkingMsgEl = null;
+    }
+  }
+}
+
+export function setStatus(status: 'loading' | 'ready' | 'error'): void {
+  const dot = shadowRoot?.querySelector('.coign-status-dot') as HTMLElement | null;
+  if (dot) dot.dataset.status = status;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Theming                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -175,6 +237,8 @@ export function applyTheme(theme: CoignTheme | undefined, root?: HTMLElement): v
 /* ------------------------------------------------------------------ */
 
 export function destroyWidget(): void {
+  detachLoadingOverlay();
+
   if (focusTrapCleanup) {
     focusTrapCleanup();
     focusTrapCleanup = null;
@@ -205,6 +269,8 @@ export function destroyWidget(): void {
   isInline = false;
   originalParent = null;
   lastFocusedElement = null;
+  isThinking = false;
+  thinkingMsgEl = null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -324,6 +390,7 @@ export function addUserMessage(content: string): void {
 }
 
 export function addAssistantMessage(content: string): void {
+  setThinking(false);
   addMessage('assistant', content);
 }
 

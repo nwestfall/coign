@@ -33,6 +33,16 @@
     </p>
 
     <div class="demo-section">
+      <h2>Browser Check</h2>
+      <div id="browser-check-result" class="status-badge loading">
+        <span class="spinner">⏳</span> Checking browser support...
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-top: 0.5rem;">
+        Coign requires WebGPU. This check runs before the model loads.
+      </p>
+    </div>
+
+    <div class="demo-section">
       <h2>Agent Status</h2>
       <div id="agent-status" class="status-badge loading">
         <span class="spinner">⏳</span> Loading model...
@@ -40,6 +50,18 @@
       <p style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-top: 0.5rem;">
         The model downloads on first load and is cached for future visits. This may take a moment.
       </p>
+    </div>
+
+    <div class="demo-section">
+      <h2>Model Swap</h2>
+      <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">Switch models without losing history or tools:</p>
+      <div class="demo-controls">
+        <button class="btn btn-secondary btn-sm" onclick="demoSwapModel('coign-balanced')">Balanced</button>
+        <button class="btn btn-secondary btn-sm" onclick="demoSwapModel('coign-creative')">Creative</button>
+        <button class="btn btn-secondary btn-sm" onclick="demoSwapModel('coign-code')">Code</button>
+        <button class="btn btn-secondary btn-sm" onclick="demoSwapModel('coign-local')">Local</button>
+      </div>
+      <p id="swap-result" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-top: 0.5rem;"></p>
     </div>
 
     <div class="demo-section">
@@ -182,18 +204,66 @@
       }
     }
 
+    async function demoSwapModel(preset) {
+      const resultEl = document.getElementById('swap-result');
+      resultEl.textContent = 'Swapping model...';
+      try {
+        await Coign.swapModel(preset);
+        resultEl.textContent = '✅ Swapped to ' + preset;
+      } catch (e) {
+        resultEl.textContent = '❌ Error: ' + e.message;
+      }
+    }
+
     // Update status badge when model loads
     document.addEventListener('coign:ready', () => {
       const badge = document.getElementById('agent-status');
       badge.className = 'status-badge ready';
-      badge.innerHTML = '✅ Model ready — ask anything!';
+      badge.innerHTML = '<span>✅</span> Model ready — ask anything!';
+    });
+
+    document.addEventListener('coign:downloadStart', () => {
+      const badge = document.getElementById('agent-status');
+      badge.className = 'status-badge loading';
+      badge.innerHTML = '<span class="spinner">⏳</span> Downloading model...';
+    });
+
+    document.addEventListener('coign:downloadProgress', (e) => {
+      const badge = document.getElementById('agent-status');
+      const p = e.detail?.progress ?? 0;
+      badge.innerHTML = `<span class="spinner">⏳</span> Downloading ${Math.round(p * 100)}%`;
+    });
+
+    document.addEventListener('coign:downloadError', () => {
+      const badge = document.getElementById('agent-status');
+      badge.className = 'status-badge error';
+      badge.innerHTML = '<span>❌</span> Model failed to load';
     });
 
     document.addEventListener('coign:error', () => {
       const badge = document.getElementById('agent-status');
       badge.className = 'status-badge error';
-      badge.innerHTML = '❌ Model failed to load';
+      badge.innerHTML = '<span>❌</span> Model failed to load';
     });
+
+    // Browser check
+    (async () => {
+      try {
+        const check = await Coign.checkSupport();
+        const badge = document.getElementById('browser-check-result');
+        if (check.supported) {
+          badge.className = 'status-badge ready';
+          badge.innerHTML = `<span>✅</span> ${check.browser} · WebGPU · ~${check.estimatedVramMb ?? '?'} MB VRAM`;
+        } else {
+          badge.className = 'status-badge error';
+          badge.innerHTML = `<span>❌</span> Unsupported — ${check.reason}`;
+        }
+      } catch (e) {
+        const badge = document.getElementById('browser-check-result');
+        badge.className = 'status-badge error';
+        badge.innerHTML = '<span>❌</span> Check failed: ' + e.message;
+      }
+    })();
   </script>
 </body>
 </html>

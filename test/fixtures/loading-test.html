@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coign Loading Overlay Test Fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Loading Overlay Test Fixture</h1>
+
+  <script type="module">
+    import { createWidget, destroyWidget } from '../../src/ui/widget.js';
+    import { emit } from '../../src/events.js';
+
+    window.loadingTestAPI = {
+      createWidget: () => createWidget({}, () => {}),
+      destroyWidget,
+      emitDownloadStart: () => emit('downloadStart', undefined),
+      emitDownloadProgress: (stage, progress, text, loadedBytes, totalBytes) =>
+        emit('downloadProgress', { stage, progress, text, loadedBytes, totalBytes }),
+      emitDownloadComplete: () => emit('downloadComplete', undefined),
+      emitDownloadError: (message) => emit('downloadError', { kind: 'init', message }),
+      emitReady: () => emit('ready', undefined),
+    };
+  </script>
+</body>
+</html>

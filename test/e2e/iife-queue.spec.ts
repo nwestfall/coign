@@ -33,6 +33,8 @@ test.describe('IIFE queue loader', () => {
         hasShow: typeof c.show === 'function',
         hasHide: typeof c.hide === 'function',
         hasDestroy: typeof c.destroy === 'function',
+        hasCheckSupport: typeof c.checkSupport === 'function',
+        hasIsLoading: typeof c.isLoading === 'function',
       };
     });
 
@@ -42,5 +44,20 @@ test.describe('IIFE queue loader', () => {
     expect(api.hasShow).toBe(true);
     expect(api.hasHide).toBe(true);
     expect(api.hasDestroy).toBe(true);
+    expect(api.hasCheckSupport).toBe(true);
+    expect(api.hasIsLoading).toBe(true);
+  });
+
+  test('checkSupport returns supported info on real API', async ({ page }) => {
+    await page.goto(IIFE_HTML);
+
+    const check = await page.evaluate(async () => {
+      const c = (window as any).Coign;
+      return await c.checkSupport();
+    });
+
+    expect(typeof check.supported).toBe('boolean');
+    expect(typeof check.webgpu).toBe('boolean');
+    expect(typeof check.browser).toBe('string');
   });
 });

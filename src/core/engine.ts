@@ -5,11 +5,16 @@
 
 import * as webllm from '@mlc-ai/web-llm';
 import { emit } from '../events.js';
-import type { CoignConfig, CoignError } from '../types.js';
+import type { CoignConfig, CoignError, DownloadProgress } from '../types.js';
 
 let engine: webllm.MLCEngine | null = null;
 let isLoading = false;
 let loadedModelId: string | null = null;
+let cancelRequested = false;
+
+export function getIsLoading(): boolean {
+  return isLoading;
+}
 
 export async function initEngine(config: CoignConfig): Promise<void> {
   if (engine && loadedModelId === config.model) {
@@ -19,24 +24,87 @@ export async function initEngine(config: CoignConfig): Promise<void> {
     throw makeError('config', 'Model is already loading');
   }
   isLoading = true;
+  cancelRequested = false;
 
   try {
+    emit('downloadStart', {});
+
     // Build AppConfig from either a custom model URL or the built-in prebuilt registry
     const appConfig = buildAppConfig(config);
 
     engine = await webllm.CreateMLCEngine(config.model, {
       appConfig,
       initProgressCallback: (report) => {
+        if (cancelRequested) return;
+        const progress: DownloadProgress = {
+          stage: mapStage(report.text),
+          progress: report.progress,
+          text: report.text,
+        };
         emit('load', { progress: report.progress, text: report.text });
+        emit('downloadProgress', progress);
+        if (config.onDownloadProgress) {
+          config.onDownloadProgress(progress);
+        }
       },
     });
+
+    if (cancelRequested) {
+      engine?.unload();
+      engine = null;
+      loadedModelId = null;
+      throw makeError('init', 'Model download was cancelled by the user.');
+    }
+
     loadedModelId = config.model;
+    emit('downloadComplete', {});
     emit('ready', {});
+    if (config.onDownloadComplete) {
+      try {
+        config.onDownloadComplete();
+      } catch (e) {
+        console.error('[Coign] onDownloadComplete callback error:', e);
+      }
+    }
   } catch (err) {
-    throw makeError('init', err instanceof Error ? err.message : String(err));
+    const coignErr =
+      err instanceof Error && (err as CoignError).kind
+        ? (err as CoignError)
+        : makeError('init', err instanceof Error ? err.message : String(err));
+
+    emit('downloadError', coignErr);
+    emit('error', coignErr);
+    if (config.onDownloadError) {
+      try {
+        config.onDownloadError(coignErr);
+      } catch (e) {
+        console.error('[Coign] onDownloadError callback error:', e);
+      }
+    }
+    throw coignErr;
   } finally {
     isLoading = false;
   }
+}
+
+/**
+ * Request cancellation of an in-progress engine init.
+ * The next progress callback check will abort.
+ */
+export function cancelEngineInit(): void {
+  cancelRequested = true;
+}
+
+/**
+ * Map WebLLM progress text into a coarse stage enum.
+ */
+function mapStage(text: string): DownloadProgress['stage'] {
+  const t = text.toLowerCase();
+  if (t.includes('cache') || t.includes('check')) return 'checking-cache';
+  if (t.includes('compile') || t.includes('build') || t.includes('wasm')) return 'compiling';
+  if (t.includes('downloa') || t.includes('fetch') || t.includes('weight')) return 'downloading';
+  if (t.includes('finish') || t.includes('done') || t.includes('ready')) return 'ready';
+  return 'downloading';
 }
 
 export async function chatCompletion(
