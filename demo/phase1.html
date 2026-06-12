@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coign — Phase 1 Vertical Slice Demo</title>
+  <link rel="stylesheet" href="./phase1.css" />
+  <meta property="og:title" content="Coign Phase 1 Demo" />
+  <meta property="og:description" content="A test page for the Coign SDK vertical slice." />
+</head>
+<body>
+  <header>
+    <h1>Coign — Phase 1 Vertical Slice</h1>
+    <p>This page is a smoke-test target for the Coign SDK.</p>
+  </header>
+
+  <main role="main">
+    <section id="intro">
+      <h2>What is Coign?</h2>
+      <p>
+        Coign is a client-side AI agent SDK. You paste one <code>&lt;script&gt;</code> tag into your site,
+        pick a model preset, and your visitors get a fully private, page-aware chatbot
+        that runs on their own device. No server, no API key, no per-message cost.
+      </p>
+    </section>
+
+    <section id="features">
+      <h2>Features</h2>
+      <ul>
+        <li>All inference happens in the visitor's browser via WebLLM</li>
+        <li>Three built-in tools: <code>searchPage</code>, <code>getPageOutline</code>, <code>getElement</code></li>
+        <li>Five model presets from 400 MB to 4.5 GB</li>
+        <li>Conversation history in <code>localStorage</code></li>
+        <li>Custom tool registration for integrators</li>
+      </ul>
+    </section>
+
+    <section id="pricing">
+      <h2>Pricing</h2>
+      <p>Coign is free and open source. The inference cost is paid by the visitor's device (GPU/CPU time and a one-time model download).</p>
+      <div class="pricing-cards">
+        <article class="card">
+          <h3>Starter</h3>
+          <p>Free. Drop the script tag and go.</p>
+        </article>
+        <article class="card">
+          <h3>Self-hosted</h3>
+          <p>Host your own model weights with <code>modelUrl</code>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>FAQ</h2>
+      <dl>
+        <dt>What browsers are supported?</dt>
+        <dd>Chrome 113+, Edge 113+, Safari 18+, and Firefox with a WASM fallback.</dd>
+
+        <dt>Does my data leave the page?</dt>
+        <dd>No. All questions and answers stay on the visitor's device.</dd>
+
+        <dt>How big is the model download?</dt>
+        <dd>The default preset (<code>coign-balanced</code>) is ~1.8 GB. It is cached after the first visit.</dd>
+      </dl>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <form id="demo-form" action="/api/contact" method="post">
+        <label>
+          Name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Message
+          <textarea name="message" rows="4"></textarea>
+        </label>
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="chat">
+      <h2>Chat with this page</h2>
+      <div id="chat-log"></div>
+      <form id="chat-form">
+        <textarea id="chat-input" rows="3" placeholder="Ask a question about this page..."></textarea>
+        <button type="submit">Ask</button>
+      </form>
+      <p id="status"></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Coign Project. MIT License.</p>
+  </footer>
+
+  <!-- Phase 1: load the SDK as an ES module from the local build -->
+  <script type="module">
+    import { init, ask } from '../src/index.ts';
+
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('chat-log');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+
+    function log(msg, cls = '') {
+      const p = document.createElement('p');
+      p.className = cls;
+      p.textContent = msg;
+      logEl.appendChild(p);
+    }
+
+    statusEl.textContent = 'Loading model (this may take a while on first visit)...';
+
+    init({
+      model: 'coign-balanced',
+      prompt: 'You are a helpful assistant embedded on this web page. You can search the page, read its outline, and inspect specific elements to answer the visitor\'s questions. Always cite the section you found the answer in. If the user asks something not on the page, say "I don\'t see that on this page."',
+      onLoad: (p) => {
+        statusEl.textContent = `Loading model… ${Math.round(p.progress * 100)}%`;
+      },
+      onReady: () => {
+        statusEl.textContent = 'Model loaded. Ask a question!';
+      },
+      onError: (e) => {
+        statusEl.textContent = `Error: ${e.message}`;
+        console.error(e);
+      },
+      onToolCall: (t) => {
+        console.log('[Tool call]', t.name, t.args);
+        log(`🔧 Tool call: ${t.name}(${JSON.stringify(t.args)})`, 'tool');
+      },
+      onToolResult: (t) => {
+        console.log('[Tool result]', t.name, t.result);
+        log(`📦 Tool result: ${t.name} — ${JSON.stringify(t.result).slice(0, 200)}`, 'tool');
+      },
+    }).then(() => {
+      log('Coign initialized successfully.', 'meta');
+    }).catch((err) => {
+      statusEl.textContent = `Failed to initialize: ${err.message}`;
+      console.error(err);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+      input.value = '';
+      log(`👤 ${question}`, 'user');
+
+      try {
+        const answer = await ask(question);
+        log(`🤖 ${answer}`, 'assistant');
+      } catch (err) {
+        log(`❌ Error: ${err.message}`, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coign SDK — IIFE Queue Loader Test</title>
+</head>
+<body>
+  <h1>Coign SDK IIFE Queue Loader Test</h1>
+  <div id="log"></div>
+
+  <script>
+    // 1. Install the stub loader
+    window.Coign = window.Coign || function() {
+      (window.Coign.q = window.Coign.q || []).push(arguments);
+    };
+
+    // 2. Queue some calls before the SDK loads
+    Coign('config', { theme: { accent: '#6366f1' } });
+
+    Coign(function(coign) {
+      log('Callback fired — SDK ready. Version: ' + coign.version);
+    });
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const p = document.createElement('p');
+      p.textContent = msg;
+      el.appendChild(p);
+    }
+  </script>
+
+  <!-- 3. Load the IIFE bundle — it should replay the queue and fire callbacks -->
+  <script src="../dist/coign-sdk.iife.js"></script>
+
+  <script>
+    // 4. After load, window.Coign should be the real API function
+    log('typeof Coign = ' + typeof Coign);
+    log('typeof Coign.q = ' + typeof Coign.q);
+    log('Coign.version = ' + Coign.version);
+
+    // 5. Verify callback pattern works post-load
+    let callbackFired = false;
+    Coign(function(coign) {
+      callbackFired = true;
+      log('Post-load callback fired (ready=true after init)');
+    });
+
+    // 6. Verify direct API access
+    log('typeof Coign.init = ' + typeof Coign.init);
+    log('typeof Coign.ask = ' + typeof Coign.ask);
+    log('typeof Coign.config = ' + typeof Coign.config);
+    log('typeof Coign.destroy = ' + typeof Coign.destroy);
+    log('typeof Coign.tool = ' + typeof Coign.tool);
+    log('typeof Coign.show = ' + typeof Coign.show);
+    log('typeof Coign.hide = ' + typeof Coign.hide);
+    log('typeof Coign.open = ' + typeof Coign.open);
+    log('typeof Coign.close = ' + typeof Coign.close);
+    log('typeof Coign.mount = ' + typeof Coign.mount);
+    log('typeof Coign.unmount = ' + typeof Coign.unmount);
+    log('typeof Coign.on = ' + typeof Coign.on);
+    log('typeof Coign.clearHistory = ' + typeof Coign.clearHistory);
+    log('typeof Coign.exportHistory = ' + typeof Coign.exportHistory);
+
+    // 7. Summary
+    setTimeout(() => {
+      const allOk =
+        typeof Coign === 'function' &&
+        Coign.version === '0.1.0' &&
+        Array.isArray(Coign.q) &&
+        Coign.q.length === 0;
+      log('---');
+      log(allOk ? '✅ All queue-loader tests passed' : '❌ Some tests failed');
+    }, 100);
+  </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+/* Phase 1 demo styles */
+
+:root {
+  --bg: #f8f9fa;
+  --text: #212529;
+  --accent: #0d6efd;
+  --accent-hover: #0b5ed7;
+  --surface: #ffffff;
+  --border: #dee2e6;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1d21;
+    --text: #e9ecef;
+    --accent: #4dabf7;
+    --accent-hover: #339af0;
+    --surface: #212529;
+    --border: #495057;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header, main, footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
+
+header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+header p {
+  margin: 0;
+  color: #6c757d;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+h2 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+  margin-top: 2rem;
+}
+
+h3 {
+  margin: 1rem 0 0.5rem;
+}
+
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+form label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-hover);
+}
+
+#chat-log {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+#chat-log p {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+}
+
+#chat-log .user {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#chat-log .assistant {
+  color: inherit;
+}
+
+#chat-log .tool {
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+#chat-log .meta {
+  color: #198754;
+  font-style: italic;
+}
+
+#chat-log .error {
+  color: #dc3545;
+}
+
+#status {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  header, main, footer {
+    padding: 1rem;
+  }
+}

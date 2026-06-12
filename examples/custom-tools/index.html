@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coign — Custom Tools Example</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 2rem auto; padding: 1rem; }
+    pre { background: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Custom Tools Example</h1>
+  <p>This example registers a custom host tool that lets the agent interact with a fake e-commerce cart API.</p>
+
+  <pre id="cart">Cart is empty.</pre>
+
+  <script src="../../dist/coign-sdk.iife.js"></script>
+  <script>
+    // Fake cart API
+    const cart = { items: [], total: 0 };
+    function updateCartDisplay() {
+      document.getElementById('cart').textContent = JSON.stringify(cart, null, 2);
+    }
+
+    async function main() {
+      await Coign.init({ preset: 'coign-balanced' });
+
+      // Register a custom tool
+      Coign.tool({
+        name: 'cart',
+        description: 'Add or remove items from the shopping cart.',
+        risk: 'write',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['add', 'remove', 'clear'] },
+            item: { type: 'string' },
+            price: { type: 'number' }
+          },
+          required: ['action']
+        },
+        execute: async ({ action, item, price }) => {
+          if (action === 'add') {
+            cart.items.push({ item, price });
+            cart.total += price || 0;
+          } else if (action === 'remove') {
+            const idx = cart.items.findIndex(i => i.item === item);
+            if (idx >= 0) {
+              cart.total -= cart.items[idx].price || 0;
+              cart.items.splice(idx, 1);
+            }
+          } else if (action === 'clear') {
+            cart.items = [];
+            cart.total = 0;
+          }
+          updateCartDisplay();
+          return { cart };
+        }
+      });
+
+      console.log('Custom tool registered. Ask the agent to add items to the cart.');
+    }
+
+    main();
+  </script>
+</body>
+</html>
