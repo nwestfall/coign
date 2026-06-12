@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo — Coign SDK</title>
+  <meta name="description" content="Interactive demo of the Coign SDK. Try the AI agent, explore built-in tools, and test the widget.">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container">
+      <a href="./" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        Coign
+      </a>
+      <ul class="links">
+        <li><a href="./docs.html">Docs</a></li>
+        <li><a href="./demo.html" class="active">Demo</a></li>
+        <li><a href="https://github.com/nathanwestfall/coign" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Interactive Demo</h1>
+    <p style="color: var(--color-text-secondary); margin-bottom: 2rem;">
+      This page has the Coign agent loaded. Try asking questions, use the widget, or test built-in tools.
+    </p>
+
+    <div class="demo-section">
+      <h2>Agent Status</h2>
+      <div id="agent-status" class="status-badge loading">
+        <span class="spinner">⏳</span> Loading model...
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-top: 0.5rem;">
+        The model downloads on first load and is cached for future visits. This may take a moment.
+      </p>
+    </div>
+
+    <div class="demo-section">
+      <h2>Built-in Tools</h2>
+      <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">These tools let the agent understand and interact with the page:</p>
+      <div class="features-grid" style="margin-top: 1rem;">
+        <div class="feature-card">
+          <h3>🔍 searchPage</h3>
+          <p>Full-text search across visible page content using MiniSearch. Returns highlighted matches with context.</p>
+          <button class="btn btn-primary btn-sm" onclick="demoSearchPage()">Try Search</button>
+          <pre id="search-result" style="margin-top: 1rem; display: none;"></pre>
+        </div>
+        <div class="feature-card">
+          <h3>📄 getPageOutline</h3>
+          <p>Returns a Markdown outline of the page structure — headings, links, and sections.</p>
+          <button class="btn btn-primary btn-sm" onclick="demoGetOutline()">Get Outline</button>
+          <pre id="outline-result" style="margin-top: 1rem; display: none;"></pre>
+        </div>
+        <div class="feature-card">
+          <h3>🎯 getElement</h3>
+          <p>Resolves a CSS selector and returns text, HTML, attributes, and viewport position.</p>
+          <button class="btn btn-primary btn-sm" onclick="demoGetElement()">Query Element</button>
+          <pre id="element-result" style="margin-top: 1rem; display: none;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-section">
+      <h2>Widget Controls</h2>
+      <div class="demo-controls">
+        <button class="btn btn-primary btn-sm" onclick="Coign.createWidget()">Create Widget</button>
+        <button class="btn btn-secondary btn-sm" onclick="Coign.showWidget()">Show</button>
+        <button class="btn btn-secondary btn-sm" onclick="Coign.hideWidget()">Hide</button>
+        <button class="btn btn-secondary btn-sm" onclick="Coign.destroyWidget()">Destroy</button>
+      </div>
+      <p style="color: var(--color-text-secondary); font-size: 0.9375rem;">
+        Use the chat widget in the bottom-right corner to talk to the agent. Or use the buttons above to control it programmatically.
+      </p>
+    </div>
+
+    <div class="demo-section">
+      <h2>Confirmation Dialog</h2>
+      <div class="demo-controls">
+        <button class="btn btn-secondary btn-sm" onclick="demoConfirm('write')">Write Confirmation</button>
+        <button class="btn btn-secondary btn-sm" onclick="demoConfirm('destructive')">Destructive Confirmation</button>
+      </div>
+      <p id="confirm-result" style="color: var(--color-text-secondary); font-size: 0.9375rem; margin-top: 0.5rem;"></p>
+    </div>
+
+    <div class="demo-section">
+      <h2>Ask the Agent</h2>
+      <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">Send a message directly via the API:</p>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <input id="ask-input" type="text" placeholder="Ask anything..." style="flex: 1; min-width: 200px; padding: 0.625rem 0.875rem; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 0.9375rem;" />
+        <button class="btn btn-primary" onclick="demoAsk()">Ask</button>
+      </div>
+      <pre id="ask-result" style="margin-top: 1rem; display: none;"></pre>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Coign SDK &middot; <a href="https://github.com/nathanwestfall/coign">GitHub</a> &middot; MIT License</p>
+    </div>
+  </footer>
+
+  <!-- Coign SDK — loads and initializes on every page -->
+  <script>
+    window.Coign = window.Coign || function() {
+      (window.Coign.q = window.Coign.q || []).push(arguments);
+    };
+    Coign('init', { preset: 'coign-balanced' });
+    Coign('config', {
+      theme: { accent: '#6366f1', text: '#1e293b', bg: '#ffffff', radius: '0.5rem' }
+    });
+  </script>
+  <script src="./dist/coign-sdk.iife.js"></script>
+
+  <script>
+    // Demo helper functions
+    function showResult(id, data) {
+      const el = document.getElementById(id);
+      el.style.display = 'block';
+      el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function demoSearchPage() {
+      try {
+        const result = await Coign.searchPage('demo');
+        showResult('search-result', result);
+      } catch (e) {
+        showResult('search-result', 'Error: ' + e.message);
+      }
+    }
+
+    async function demoGetOutline() {
+      try {
+        const result = await Coign.getPageOutline();
+        showResult('outline-result', result);
+      } catch (e) {
+        showResult('outline-result', 'Error: ' + e.message);
+      }
+    }
+
+    async function demoGetElement() {
+      try {
+        const result = await Coign.getElement('h1');
+        showResult('element-result', result);
+      } catch (e) {
+        showResult('element-result', 'Error: ' + e.message);
+      }
+    }
+
+    async function demoConfirm(risk) {
+      const resultEl = document.getElementById('confirm-result');
+      resultEl.textContent = 'Waiting for confirmation...';
+      try {
+        const allowed = await Coign.showConfirmDialog(
+          risk === 'destructive' ? 'Delete all data?' : 'Proceed with this action?',
+          risk,
+          risk === 'destructive' ? 'DELETE' : undefined
+        );
+        resultEl.textContent = allowed ? '✅ User allowed' : '❌ User denied';
+      } catch (e) {
+        resultEl.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    async function demoAsk() {
+      const input = document.getElementById('ask-input');
+      const resultEl = document.getElementById('ask-result');
+      if (!input.value.trim()) return;
+      resultEl.style.display = 'block';
+      resultEl.textContent = 'Thinking...';
+      try {
+        const answer = await Coign.ask(input.value);
+        resultEl.textContent = answer;
+      } catch (e) {
+        resultEl.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    // Update status badge when model loads
+    document.addEventListener('coign:ready', () => {
+      const badge = document.getElementById('agent-status');
+      badge.className = 'status-badge ready';
+      badge.innerHTML = '✅ Model ready — ask anything!';
+    });
+
+    document.addEventListener('coign:error', () => {
+      const badge = document.getElementById('agent-status');
+      badge.className = 'status-badge error';
+      badge.innerHTML = '❌ Model failed to load';
+    });
+  </script>
+</body>
+</html>

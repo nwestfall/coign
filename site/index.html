@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coign — Private, Page-Aware AI Agent</title>
+  <meta name="description" content="Coign is a client-side AI agent SDK that runs entirely in the browser via WebGPU. No cloud. No data leaks. Fully private.">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container">
+      <a href="./" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        Coign
+      </a>
+      <ul class="links">
+        <li><a href="./docs.html">Docs</a></li>
+        <li><a href="./demo.html">Demo</a></li>
+        <li><a href="https://github.com/nathanwestfall/coign" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Private AI that runs <span class="gradient">in your browser</span></h1>
+        <p class="tagline">Coign is a client-side SDK that embeds a page-aware AI agent into any website. It runs entirely on-device via WebGPU — no cloud calls, no data leaks, no subscription required.</p>
+        <div class="hero-actions">
+          <a href="./demo.html" class="btn btn-primary">Try the Demo</a>
+          <a href="./docs.html" class="btn btn-secondary">Read the Docs</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container">
+        <div style="text-align: center; max-width: 700px; margin: 0 auto;">
+          <h2 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem;">Try Coign right now</h2>
+          <p style="color: var(--color-text-secondary); margin-bottom: 2rem;">Ask the agent anything about this page — or any question at all. The model downloads once and then runs entirely on your device.</p>
+        </div>
+
+        <div class="code-window" style="max-width: 700px; margin: 0 auto 3rem;">
+          <div class="code-window-header">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+          <pre><code>&lt;!-- Two lines to add Coign to any page --&gt;
+&lt;script&gt;
+  window.Coign = window.Coign || function() {
+    (window.Coign.q = window.Coign.q || []).push(arguments);
+  };
+  Coign('init', { preset: 'coign-balanced' });
+&lt;/script&gt;
+&lt;script src="https://cdn.example.com/coign-sdk.iife.js"&gt;&lt;/script&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2 style="text-align: center; font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem;">Why Coign?</h2>
+        <p style="text-align: center; color: var(--color-text-secondary); max-width: 560px; margin: 0 auto 2rem;">Built for developers who want AI without the privacy trade-offs.</p>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="icon">🔒</div>
+            <h3>Zero-Cloud Privacy</h3>
+            <p>All inference happens locally via WebGPU. Your users' conversations never leave their device. No API keys, no rate limits.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">📄</div>
+            <h3>Page-Aware Agent</h3>
+            <p>Coign reads the current page content, headings, and interactive elements. Ask "what's the pricing?" and it answers from the page.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">⚡</div>
+            <h3>Instant CDN Install</h3>
+            <p>Drop in two lines of HTML. No build step, no npm install, no framework lock-in. Works on plain HTML, React, Vue, or anywhere.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">🛠️</div>
+            <h3>Custom Tools</h3>
+            <p>Register your own JavaScript tools so the agent can interact with your app — click buttons, fill forms, navigate, or call your APIs.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">🎨</div>
+            <h3>Themable Widget</h3>
+            <p>Style the chat widget to match your brand. Configure colors, radius, and positioning through a simple theme object.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon">🌐</div>
+            <h3>WebGPU Native</h3>
+            <p>Powered by <code>@mlc-ai/web-llm</code> for cutting-edge in-browser LLM performance. Automatic model caching across sessions.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container" style="text-align: center;">
+        <h2 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem;">Ready to get started?</h2>
+        <p style="color: var(--color-text-secondary); max-width: 560px; margin: 0 auto 2rem;">Explore the documentation, try the live demo, or grab the source from GitHub.</p>
+        <div class="hero-actions">
+          <a href="./docs.html" class="btn btn-primary">Read the Docs</a>
+          <a href="./demo.html" class="btn btn-secondary">Try the Demo</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Coign SDK &middot; <a href="https://github.com/nathanwestfall/coign">GitHub</a> &middot; MIT License</p>
+    </div>
+  </footer>
+
+  <!-- Coign SDK — loads and initializes on every page -->
+  <script>
+    window.Coign = window.Coign || function() {
+      (window.Coign.q = window.Coign.q || []).push(arguments);
+    };
+    Coign('init', { preset: 'coign-balanced' });
+    Coign('config', {
+      theme: { accent: '#6366f1', text: '#1e293b', bg: '#ffffff', radius: '0.5rem' }
+    });
+  </script>
+  <script src="./dist/coign-sdk.iife.js"></script>
+</body>
+</html>

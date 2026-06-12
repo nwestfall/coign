@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — Coign SDK</title>
+  <meta name="description" content="Developer documentation for the Coign SDK. Quick start guide, API reference, architecture overview, and more.">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container">
+      <a href="./" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        Coign
+      </a>
+      <ul class="links">
+        <li><a href="./docs.html" class="active">Docs</a></li>
+        <li><a href="./demo.html">Demo</a></li>
+        <li><a href="https://github.com/nathanwestfall/coign" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar">
+      <h2>Guide</h2>
+      <ul>
+        <li><a href="#quick-start">Quick Start</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#configuration">Configuration</a></li>
+        <li><a href="#api-reference">API Reference</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#model-presets">Model Presets</a></li>
+        <li><a href="#custom-tools">Custom Tools</a></li>
+        <li><a href="#theming">Theming</a></li>
+        <li><a href="#risk-tiers">Risk Tiers</a></li>
+      </ul>
+    </aside>
+
+    <article class="docs-content">
+      <h2 id="quick-start">Quick Start</h2>
+      <p>Add Coign to any HTML page in two lines:</p>
+      <pre><code>&lt;script&gt;
+  window.Coign = window.Coign || function() {
+    (window.Coign.q = window.Coign.q || []).push(arguments);
+  };
+  Coign('init', { preset: 'coign-balanced' });
+&lt;/script&gt;
+&lt;script src="https://your-cdn.com/coign-sdk.iife.js"&gt;&lt;/script&gt;</code></pre>
+      <p>The <code>window.Coign</code> stub queues calls before the SDK loads. Once loaded, the real API replays the queue automatically.</p>
+
+      <h2 id="installation">Installation</h2>
+      <h4>CDN (Recommended)</h4>
+      <p>Use the IIFE bundle with the queue-loader pattern shown above. This works on any plain HTML site with no build step.</p>
+      <h4>ESM (npm)</h4>
+      <pre><code>npm install coign-sdk</code></pre>
+      <pre><code>import { init, config } from 'coign-sdk';
+
+init({ preset: 'coign-balanced' });
+config({ theme: { accent: '#6366f1' } });</code></pre>
+
+      <h2 id="configuration">Configuration</h2>
+      <p>The <code>config</code> function accepts a flat object of options:</p>
+      <table>
+        <thead>
+          <tr><th>Option</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>apiKey</code></td><td>string</td><td>API key if using a cloud proxy (optional)</td></tr>
+          <tr><td><code>endpoint</code></td><td>string</td><td>Custom LLM endpoint (optional)</td></tr>
+          <tr><td><code>model</code></td><td>string</td><td>Model identifier or preset name</td></tr>
+          <tr><td><code>theme</code></td><td>object</td><td>Accent, text, bg, radius colors</td></tr>
+          <tr><td><code>position</code></td><td>string</td><td>Widget position: <code>bottom-right</code> or <code>inline</code></td></tr>
+          <tr><td><code>inlineMount</code></td><td>string</td><td>CSS selector for inline mount target</td></tr>
+          <tr><td><code>systemPrompt</code></td><td>string</td><td>Custom system prompt override</td></tr>
+          <tr><td><code>contextWindowSize</code></td><td>number</td><td>Max tokens in context</td></tr>
+          <tr><td><code>temperature</code></td><td>number</td><td>Sampling temperature (0–1)</td></tr>
+          <tr><td><code>maxTokens</code></td><td>number</td><td>Max response tokens</td></tr>
+          <tr><td><code>customTools</code></td><td>array</td><td>Additional tool definitions</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="api-reference">API Reference</h2>
+      <h4><code>init(options)</code></h4>
+      <p>Initializes the SDK with a model preset or custom configuration. Must be called before other API methods.</p>
+      <pre><code>init({ preset: 'coign-balanced' });
+init({ model: 'Llama-3.1-8B-Instruct-q4f32_1-MLC' });</code></pre>
+
+      <h4><code>config(options)</code></h4>
+      <p>Updates configuration after init. Merges with existing config.</p>
+      <pre><code>config({ theme: { accent: '#10b981' } });</code></pre>
+
+      <h4><code>ask(message)</code></h4>
+      <p>Sends a message to the agent and returns a Promise that resolves with the response string.</p>
+      <pre><code>const answer = await Coign.ask('Summarize this page');</code></pre>
+
+      <h4><code>createWidget()</code></h4>
+      <p>Creates and mounts the chat widget into the page. The widget is a singleton — calling this again returns the same instance.</p>
+      <pre><code>Coign.createWidget();
+Coign.showWidget();   // open panel
+Coign.hideWidget();   // close panel
+Coign.destroyWidget(); // remove from DOM</code></pre>
+
+      <h4><code>showConfirmDialog(message, risk, confirmationValue?)</code></h4>
+      <p>Shows a native <code>&lt;dialog&gt;</code> for risky operations. Returns <code>Promise&lt;boolean&gt;</code>.</p>
+      <pre><code>const allowed = await Coign.showConfirmDialog(
+  'Delete all user data?',
+  'destructive',
+  'DELETE'
+);</code></pre>
+
+      <h2 id="architecture">Architecture</h2>
+      <p>Coign is designed as a set of layered modules:</p>
+      <ul>
+        <li><strong>Core (<code>src/core/</code>)</strong> — Configuration, preset resolution, and model initialization</li>
+        <li><strong>LLM (<code>src/llm/</code>)</strong> — WebLLM engine wrapper, chat engine, tool loop (manual and native)</li>
+        <li><strong>Tools (<code>src/tools/</code>)</strong> — Built-in tools (<code>searchPage</code>, <code>getPageOutline</code>, <code>getElement</code>) and host tool registration</li>
+        <li><strong>Store (<code>src/store/</code>)</strong> — Page outline store and MiniSearch index for in-page search</li>
+        <li><strong>UI (<code>src/ui/</code>)</strong> — Shadow DOM chat widget, theming, inline mount, focus trap, and modal dialog</li>
+        <li><strong>Events (<code>src/events.ts</code>)</strong> — Typed event bus for loose coupling between modules</li>
+        <li><strong>Queue Loader (<code>src/queue-loader.ts</code>)</strong> — IIFE stub/replay for CDN loading</li>
+      </ul>
+      <p>All modules are pure ESM with <code>.js</code> extensions. Browser-only code guards with <code>typeof window !== 'undefined'</code> so it can be imported in Node/Vitest contexts.</p>
+
+      <h2 id="model-presets">Model Presets</h2>
+      <table>
+        <thead>
+          <tr><th>Preset</th><th>Model</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>coign-balanced</code></td><td>Llama-3.1-8B Instruct q4f32_1</td><td>Fast, capable, good default</td></tr>
+          <tr><td><code>coign-creative</code></td><td>Qwen2.5-7B Instruct q4f16_1</td><td>Best for creative writing</td></tr>
+          <tr><td><code>coign-code</code></td><td>DeepSeek-Coder-V2-Lite q4f16_1</td><td>Code generation and review</td></tr>
+          <tr><td><code>coign-local</code></td><td>Phi-3.5-mini-instruct q4f16_1</td><td>Smallest, fastest on low-end devices</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="custom-tools">Custom Tools</h2>
+      <p>Register custom tools with <code>Coign.registerTool</code>:</p>
+      <pre><code>Coign.registerTool({
+  name: 'sendAnalytics',
+  description: 'Send a page-view event to analytics',
+  parameters: {
+    type: 'object',
+    properties: {
+      page: { type: 'string', description: 'Page path' }
+    },
+    required: ['page']
+  },
+  execute: async ({ page }) => {
+    gtag('event', 'page_view', { page });
+    return { sent: true };
+  }
+});</code></pre>
+      <p>Tools are called via an XML-based manual loop by default. The LLM generates <code>&lt;tool&gt;</code> tags, the SDK parses them, executes the matching tool, and feeds the result back into the conversation.</p>
+
+      <h2 id="theming">Theming</h2>
+      <p>Pass a <code>theme</code> object to <code>config()</code>:</p>
+      <pre><code>Coign.config({
+  theme: {
+    accent: '#6366f1',
+    text: '#1e293b',
+    bg: '#ffffff',
+    radius: '0.5rem'
+  }
+});</code></pre>
+
+      <h2 id="risk-tiers">Risk Tiers</h2>
+      <p>Operations that modify state or access sensitive data require user confirmation:</p>
+      <table>
+        <thead>
+          <tr><th>Tier</th><th>Behavior</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>read</code></td><td>Silent</td><td>Reading page content</td></tr>
+          <tr><td><code>write</code></td><td>Modal confirmation</td><td>Clicking a submit button</td></tr>
+          <tr><td><code>destructive</code></td><td>Modal + typed confirmation</td><td>Deleting data</td></tr>
+        </tbody>
+      </table>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Coign SDK &middot; <a href="https://github.com/nathanwestfall/coign">GitHub</a> &middot; MIT License</p>
+    </div>
+  </footer>
+
+  <!-- Coign SDK — loads and initializes on every page -->
+  <script>
+    window.Coign = window.Coign || function() {
+      (window.Coign.q = window.Coign.q || []).push(arguments);
+    };
+    Coign('init', { preset: 'coign-balanced' });
+    Coign('config', {
+      theme: { accent: '#6366f1', text: '#1e293b', bg: '#ffffff', radius: '0.5rem' }
+    });
+  </script>
+  <script src="./dist/coign-sdk.iife.js"></script>
+</body>
+</html>
