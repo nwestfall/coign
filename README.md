@@ -9,26 +9,26 @@ No API keys. No servers. No per-message cost. The model downloads once (≈ 400 
 Paste two lines of HTML into any page:
 
 ```html
-<script src="https://cdn.coign.dev/coign-sdk@0.1.0.js" integrity="sha384-dios2vnX25M427yxLaLjQAMVU+n/4FE71rJYicVTE26FLQTDRoqY02tsC2iVZvSh" crossorigin="anonymous"></script>
-<script>
-  Coign.init({
-    model: 'coign-balanced',
-    prompt: 'You are a helpful assistant on this page.',
-  });
-</script>
-```
-
-Or use the queue pattern so calls work even before the script loads:
-
-```html
 <script>
   window.Coign = window.Coign || function() {
     (window.Coign.q = window.Coign.q || []).push(arguments);
   };
-  Coign('init', { model: 'coign-balanced', prompt: 'You are a helpful assistant.' });
-  Coign('config', { theme: { accent: '#6366f1' } });
+  Coign('init', { preset: 'coign-balanced', prompt: 'You are a helpful assistant on this page.' });
 </script>
-<script src="https://cdn.coign.dev/coign-sdk@0.1.0.js" crossorigin="anonymous"></script>
+<script src="https://cdn.coign.dev/coign-sdk@0.1.0.js" integrity="sha384-dios2vnX25M427yxLaLjQAMVU+n/4FE71rJYicVTE26FLQTDRoqY02tsC2iVZvSh" crossorigin="anonymous"></script>
+```
+
+The `window.Coign` stub queues calls before the SDK loads. Once loaded, the real API replays the queue automatically.
+
+Or check browser support first:
+
+```js
+const check = await Coign.checkSupport();
+if (!check.supported) {
+  console.warn('Coign requires WebGPU. Reason:', check.reason);
+} else {
+  await Coign.init({ preset: 'coign-balanced' });
+}
 ```
 
 ## Installation
@@ -69,6 +69,27 @@ Use `modelUrl` to load from a custom URL or your own CDN.  Use `cacheBackend` to
 | `opfs` | Survives browser restarts, faster on Chromium | Best performance / privacy |
 | `cache` | May be evicted by browser | Development / low disk space |
 | `cross-origin` | Service-worker based | Advanced / self-hosted mirrors |
+
+### Download progress
+
+Model downloads are large (400 MB–4.5 GB). You can track progress with callbacks or events:
+
+```js
+await Coign.init({
+  preset: 'coign-balanced',
+  onDownloadProgress: (p) => {
+    console.log(p.stage, Math.round(p.progress * 100) + '%');
+  },
+  onDownloadComplete: () => console.log('Model ready'),
+  onDownloadError: (err) => console.error('Download failed:', err),
+});
+```
+
+The built-in widget also shows a progress overlay automatically. Cancel a slow download:
+
+```js
+Coign.cancelEngineInit(); // or click Cancel in the widget overlay
+```
 
 ## Offline mode
 
@@ -117,6 +138,49 @@ Use `autoApprove: ['read', 'write']` to override per-tool or globally.
 
 Initializes the engine, registers built-in tools, and mounts the widget.
 
+```js
+await Coign.init({
+  preset: 'coign-balanced',
+  onDownloadProgress: (p) => console.log(p.stage, p.progress),
+  onDownloadComplete: () => console.log('Model ready'),
+  onDownloadError: (err) => console.error(err),
+});
+```
+
+### `checkSupport()` → `Promise<SupportCheck>`
+
+Verify WebGPU availability and estimate VRAM before calling `init()`.
+
+```js
+const check = await Coign.checkSupport();
+// { supported: true, webgpu: true, browser: 'Chrome', estimatedVramMb: 4096 }
+```
+
+### `isInitialized()` / `isReady()`
+
+Check SDK state at any time.
+
+```js
+Coign.isInitialized(); // true after init() resolves
+Coign.isReady();       // true when the model is loaded and the engine is ready
+```
+
+### `retryInit(options)` → `Promise<CoignSDK>`
+
+Re-attempt `init()` with exponential backoff.
+
+```js
+await Coign.retryInit({ preset: 'coign-balanced', maxRetries: 3, retryDelayMs: 2000 });
+```
+
+### `swapModel(model)` → `Promise<void>`
+
+Switch models without destroying history or tools.
+
+```js
+await Coign.swapModel('coign-code');
+```
+
 ### `ask(question)` → `Promise<string>`
 
 Sends a question to the agent. Runs the tool-call loop automatically. Returns the final answer.
@@ -143,7 +207,7 @@ Register a custom host tool. Returns an unregister function.
 
 ### `on(event, callback)` → `() => void`
 
-Subscribe to SDK events: `load`, `ready`, `error`, `ask`, `answer`, `warn`, `toolCall`, `toolResult`, `unregister`.
+Subscribe to SDK events: `load`, `ready`, `error`, `ask`, `answer`, `warn`, `toolCall`, `toolResult`, `unregister`, `downloadStart`, `downloadProgress`, `downloadComplete`, `downloadError`.
 
 ### `clearHistory()` / `exportHistory()`
 
@@ -153,22 +217,34 @@ Manage localStorage-persisted conversation history (capped at 50 messages / 100 
 
 Tear down the engine, widget, and all listeners.
 
-## Examples
+## Examples & Demo
 
-See the [`examples/`](examples/) directory:
+Visit the **published site** for live examples, interactive demos, and full documentation:
 
-- [`plain-html`](examples/plain-html/) — simplest integration
-- [`cms-embed`](examples/cms-embed/) — inline mount inside a CMS preview
-- [`custom-tools`](examples/custom-tools/) — register a shopping-cart tool
-- [`inline-mode`](examples/inline-mode/) — sidebar chat panel
+🔗 **https://nwestfall.github.io/coign/**
+
+- [Landing page](https://nwestfall.github.io/coign/) — Overview, features, and quick start
+- [Documentation](https://nwestfall.github.io/coign/docs.html) — API reference, architecture, model presets, custom tools, theming, risk tiers
+- [Interactive Demo](https://nwestfall.github.io/coign/demo.html) — Browser check, model swap, built-in tools, widget controls, confirmation dialogs
+
+You can also run the site locally:
+
+```bash
+npm run build       # build the SDK bundle first
+npm run build:site  # build the site
+npm run preview:site # preview locally
+```
 
 ## Development
 
 ```bash
 npm install
-npm run dev        # opens the Phase 1 demo
-npm run build      # produces ESM, CJS, and IIFE bundles in dist/
-npm run test       # runs the smoke-test harness (requires WebGPU)
+npm run dev         # Vite dev server
+npm run build       # produces ESM, CJS, and IIFE bundles in dist/
+npm run test        # runs unit tests + e2e tests
+npm run test:unit   # Vitest unit tests (jsdom)
+npm run test:e2e    # Playwright browser tests
+npm run build:site  # build the GitHub Pages site
 ```
 
 ## Browser requirements
@@ -176,6 +252,8 @@ npm run test       # runs the smoke-test harness (requires WebGPU)
 - **Chrome 113+**, **Edge 113+**, or **ChromeOS** (WebGPU required)
 - ~4.5 GB free disk space for the largest model
 - A one-time download on first visit (cached afterward)
+
+Use `Coign.checkSupport()` to detect WebGPU and estimate VRAM before calling `init()`. If the browser is unsupported, `init()` throws a clear `CoignError` with `kind: 'browser_unsupported'`.
 
 ## Architecture
 
