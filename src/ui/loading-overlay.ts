@@ -150,7 +150,7 @@ function hide(): void {
 /* ------------------------------------------------------------------ */
 
 function updateProgress(
-  stage: DownloadProgress['stage'],
+  _stage: DownloadProgress['stage'],
   progress: number,
   text: string,
   loadedBytes?: number,
@@ -167,11 +167,7 @@ function updateProgress(
   }
 
   if (stageTextEl) {
-    let label = text;
-    if (stage === 'checking-cache') label = 'Checking local cache…';
-    else if (stage === 'downloading') label = 'Downloading model weights…';
-    else if (stage === 'compiling') label = 'Compiling shaders…';
-    else if (stage === 'ready') label = 'Ready!';
+    let label = text || 'Loading…';
 
     if (loadedBytes !== undefined && totalBytes !== undefined && totalBytes > 0) {
       label += ` (${formatBytes(loadedBytes)} / ${formatBytes(totalBytes)})`;

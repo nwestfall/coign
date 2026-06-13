@@ -35,7 +35,7 @@ test.describe('Widget Loading Overlay', () => {
     expect(width).toBe('42%');
 
     const text = await page.locator('#coign-widget-host >> .coign-loading-text').textContent();
-    expect(text).toContain('Downloading');
+    expect(text).toContain('Fetching param cache...');
     expect(text).toContain('42%');
   });
 

@@ -502,20 +502,101 @@
   cursor: not-allowed;
 }
 
+/* Loading overlay ------------------------------------------------------- */
+.coign-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--coign-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  z-index: 10;
+  border-radius: var(--coign-radius);
+}
+
+.coign-loading-overlay--hidden {
+  display: none !important;
+}
+
+.coign-loading-overlay--visible {
+  display: flex;
+}
+
+.coign-loading-track {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  background: var(--coign-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.coign-loading-bar {
+  height: 100%;
+  background: var(--coign-accent);
+  border-radius: 3px;
+  transition: width 200ms ease-out;
+  width: 0%;
+}
+
+.coign-loading-text {
+  font-size: 14px;
+  color: var(--coign-text-secondary);
+  text-align: center;
+}
+
+.coign-loading-error {
+  font-size: 13px;
+  color: var(--coign-error);
+  text-align: center;
+  max-width: 100%;
+}
+
+.coign-loading-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.coign-loading-btn {
+  padding: 8px 16px;
+  border-radius: calc(var(--coign-radius) / 1.5);
+  border: 1px solid var(--coign-border);
+  background: var(--coign-bg-secondary);
+  color: var(--coign-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--coign-transition);
+}
+
+.coign-loading-btn:hover {
+  background: var(--coign-bg-hover);
+}
+
+.coign-loading-btn--retry {
+  background: var(--coign-accent);
+  color: var(--coign-accent-text);
+  border-color: var(--coign-accent);
+}
+
+.coign-loading-btn--retry:hover {
+  background: var(--coign-accent-hover);
+}
+
 /* Scrollbar ------------------------------------------------------------- */
 .coign-messages::-webkit-scrollbar {
   width: 6px;
 }
-
 .coign-messages::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .coign-messages::-webkit-scrollbar-thumb {
   background: var(--coign-border);
   border-radius: 3px;
 }
-
 .coign-messages {
   scrollbar-width: thin;
   scrollbar-color: var(--coign-border) transparent;

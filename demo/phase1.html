@@ -60,7 +60,7 @@
         <dd>No. All questions and answers stay on the visitor's device.</dd>
 
         <dt>How big is the model download?</dt>
-        <dd>The default preset (<code>coign-balanced</code>) is ~1.8 GB. It is cached after the first visit.</dd>
+        <dd>The demo preset (<code>coign-tiny</code>) is ~400 MB. Larger presets up to ~4.5 GB are available. Everything is cached after the first visit.</dd>
       </dl>
     </section>
 
@@ -117,7 +117,7 @@
     statusEl.textContent = 'Loading model (this may take a while on first visit)...';
 
     init({
-      model: 'coign-balanced',
+      model: 'coign-tiny',
       prompt: 'You are a helpful assistant embedded on this web page. You can search the page, read its outline, and inspect specific elements to answer the visitor\'s questions. Always cite the section you found the answer in. If the user asks something not on the page, say "I don\'t see that on this page."',
       onLoad: (p) => {
         statusEl.textContent = `Loading model… ${Math.round(p.progress * 100)}%`;
