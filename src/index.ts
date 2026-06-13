@@ -17,10 +17,10 @@ import { patchConfig, resetConfig, getConfig } from './config.js';
 import { loadHistory, saveHistory, clearHistory, exportHistory } from './store/history.js';
 import { outlineStore } from './store/outline-store.js';
 import {
-  createWidget,
-  destroyWidget,
-  showWidget,
-  hideWidget,
+  createWidget as createWidgetUI,
+  destroyWidget as destroyWidgetUI,
+  showWidget as showWidgetUI,
+  hideWidget as hideWidgetUI,
   openPanel,
   closePanel,
   mountInline,
@@ -31,6 +31,7 @@ import {
   applyTheme,
   setThinking,
 } from './ui/widget.js';
+import { showConfirmDialog } from './ui/modal.js';
 import { createRealAPI, replayQueue, resetQueueState, type GlobalAPI } from './queue-loader.js';
 
 declare const __VERSION__: string;
@@ -149,9 +150,19 @@ export async function init(config: CoignConfig): Promise<CoignSDK> {
     throw err;
   }
 
-  try {
-    const resolvedModel = resolvePreset(config.model);
+  const modelSource = config.preset || config.model;
+  if (!modelSource) {
+    const err = Object.assign(new Error('Either model or preset is required'), {
+      kind: 'config' as const,
+    }) as CoignError;
+    if (config.onError) config.onError(err);
+    emit('error', err);
+    throw err;
+  }
 
+  const resolvedModel = resolvePreset(modelSource);
+
+  try {
     // Wire download lifecycle callbacks to events
     if (config.onDownloadProgress) {
       eventUnsubs.push(
@@ -191,11 +202,11 @@ export async function init(config: CoignConfig): Promise<CoignSDK> {
   const outline = buildPageOutline(config.selectDOM ?? 'main, [role="main"], article');
   outlineStore.set('current', outline);
 
-  sdkInstance = createSDK({ ...config, model: resolvePreset(config.model) });
+  sdkInstance = createSDK({ ...config, model: resolvedModel });
   initialized = true;
 
   // Create widget UI
-  createWidget({ ...config, model: resolvePreset(config.model) }, (question) => {
+  createWidgetUI({ ...config, model: resolvedModel }, (question) => {
     sdkInstance!.ask(question);
   });
 
@@ -305,7 +316,35 @@ export function config(patch: Partial<CoignConfig>): void {
   }
 }
 
-export { on };
+export async function searchPage(query: string): Promise<any> {
+  return searchPageTool.execute({ query });
+}
+
+export async function getPageOutline(): Promise<string> {
+  return getPageOutlineTool.execute({});
+}
+
+export async function getElement(selector: string): Promise<any> {
+  return getElementTool.execute({ selector });
+}
+
+export function createWidget(): void {
+  createWidgetUI(getConfig() as CoignConfig, (question) => sdkInstance?.ask(question));
+}
+
+export function showWidget(): void {
+  showWidgetUI();
+}
+
+export function hideWidget(): void {
+  hideWidgetUI();
+}
+
+export function destroyWidget(): void {
+  destroyWidgetUI();
+}
+
+export { showConfirmDialog, on };
 
 export { clearHistory, exportHistory };
 
@@ -334,6 +373,14 @@ api = {
   isReady,
   retryInit,
   swapModel,
+  searchPage,
+  getPageOutline,
+  getElement,
+  showConfirmDialog,
+  createWidget,
+  showWidget,
+  hideWidget,
+  destroyWidget,
   version: VERSION,
 };
 

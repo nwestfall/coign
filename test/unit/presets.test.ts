@@ -35,8 +35,8 @@ describe('getPresetSupport', () => {
 });
 
 describe('PRESETS', () => {
-  it('contains exactly 5 presets', () => {
-    expect(Object.keys(PRESETS)).toHaveLength(5);
+  it('contains exactly 8 presets', () => {
+    expect(Object.keys(PRESETS)).toHaveLength(8);
   });
 
   it('each preset has required fields', () => {
@@ -48,5 +48,11 @@ describe('PRESETS', () => {
       expect(['native', 'manual', 'unverified']).toContain(preset.toolSupport);
       expect(preset.recommended).toBeTruthy();
     }
+  });
+
+  it('maps new presets to expected model IDs', () => {
+    expect(resolvePreset('coign-creative')).toBe('Llama-3.1-8B-Instruct-q4f16_1-MLC');
+    expect(resolvePreset('coign-code')).toBe('Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC');
+    expect(resolvePreset('coign-local')).toBe('Llama-3.2-3B-Instruct-q4f16_1-MLC');
   });
 });

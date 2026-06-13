@@ -4,8 +4,9 @@
  */
 
 export interface CoignConfig {
-  model: string;
-  prompt: string;
+  model?: string;
+  preset?: string;
+  prompt?: string;
   selectDOM?: string;
   preloadMode?: 'full' | 'outline' | 'none';
   position?: 'bottom-right' | 'bottom-left';

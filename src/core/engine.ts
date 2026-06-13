@@ -17,6 +17,9 @@ export function getIsLoading(): boolean {
 }
 
 export async function initEngine(config: CoignConfig): Promise<void> {
+  if (!config.model) {
+    throw makeError('config', 'Model is required');
+  }
   if (engine && loadedModelId === config.model) {
     return;
   }
@@ -164,9 +167,9 @@ function buildAppConfig(config: CoignConfig): webllm.AppConfig {
   if (config.modelUrl) {
     const base = config.modelUrl.replace(/\/$/, '');
     const modelRecord: webllm.ModelRecord = {
-      model: base,                 // URL to model-weight repo / folder
-      model_id: config.model,
-      model_lib: base + '/' + config.model + '-webgpu.wasm',
+      model: base,
+      model_id: config.model!,
+      model_lib: base + '/' + config.model! + '-webgpu.wasm',
       vram_required_MB: 0,
       low_resource_required: true,
     };

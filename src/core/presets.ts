@@ -50,6 +50,27 @@ export const PRESETS: Record<string, Preset> = {
     toolSupport: 'native',
     recommended: 'When tool-call reliability matters most',
   },
+  'coign-creative': {
+    name: 'coign-creative',
+    modelId: 'Llama-3.1-8B-Instruct-q4f16_1-MLC',
+    sizeMb: 4500,
+    toolSupport: 'manual',
+    recommended: 'Creative writing, brainstorming',
+  },
+  'coign-code': {
+    name: 'coign-code',
+    modelId: 'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC',
+    sizeMb: 4500,
+    toolSupport: 'native',
+    recommended: 'Code generation and technical tasks',
+  },
+  'coign-local': {
+    name: 'coign-local',
+    modelId: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
+    sizeMb: 1800,
+    toolSupport: 'manual',
+    recommended: 'Default local model',
+  },
 };
 
 export function resolvePreset(input: string): string {

@@ -21,15 +21,25 @@ export function on<T extends CoignEvent>(event: T, handler: Handler<T>): () => v
 
 export function emit<T extends CoignEvent>(event: T, payload: CoignEventPayload[T]): void {
   const set = listeners.get(event);
-  if (!set) return;
-  set.forEach((h) => {
+  if (set) {
+    set.forEach((h) => {
+      try {
+        h(payload);
+      } catch (e) {
+        // Intentionally swallow — no uncaught exceptions from event handlers
+        console.error(`Coign event handler error for "${event}":`, e);
+      }
+    });
+  }
+
+  // Dispatch DOM custom event so external listeners (e.g. demo page) can observe
+  if (typeof document !== 'undefined') {
     try {
-      h(payload);
-    } catch (e) {
-      // Intentionally swallow — no uncaught exceptions from event handlers
-      console.error(`Coign event handler error for "${event}":`, e);
+      document.dispatchEvent(new CustomEvent(`coign:${event}`, { detail: payload }));
+    } catch {
+      // ignore
     }
-  });
+  }
 }
 
 export function clearAllListeners(): void {
