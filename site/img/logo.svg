@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
-  <!-- External corner with its vertex at the centre -->
-  <path d="M12 4v8h8"/>
-  <!-- Agent dot sitting on the coign (the vantage point) -->
-  <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+  <!-- Corner bracket in the bottom-right -->
+  <path d="M20 12v8H12"/>
+  <!-- Agent dot centred in the viewBox -->
+  <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
 </svg>
